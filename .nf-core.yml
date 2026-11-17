@@ -1,23 +1,20 @@
-repository_type: pipeline
-
-nf_core_version: 4.2.0
-
 lint:
   files_exist:
     - conf/igenomes.config
     - conf/igenomes_ignored.config
-
+nf_core_version: 4.2.2
+repository_type: pipeline
 template:
-  org: nf-core
-  name: fspfinalqc
+  author: LiaOb21
   description: This pipeline quality assesses and analyses the decontaminated assemblies
     of the Fungarium Sequencing Project
-  author: LiaOb21
-  version: 1.0.0dev
-  force: true
+  force: false
+  is_nfcore: true
+  name: fspfinalqc
+  org: nf-core
   outdir: .
   skip_features:
     - igenomes
     - fastqc
     - gpu
-  is_nfcore: true
+  version: 1.0.0dev

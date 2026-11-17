@@ -19,12 +19,21 @@ workflow FSPFINALQC {
 
     take:
     ch_samplesheet // channel: samplesheet read in from --input
+    ch_samplesheet_fasta // channel: samplesheet with fasta files
+    ch_samplesheet_reads_fasta // channel: samplesheet with reads and fasta files
+    ch_samplesheet_busco_btk // channel: samplesheet with busco and btk results
     multiqc_config
     multiqc_logo
     multiqc_methods_description
     outdir
 
     main:
+
+    ch_samplesheet.view { item -> "samplesheet: ${item}" }
+    ch_samplesheet_fasta.view       { item -> "fasta:       ${item}" }
+    ch_samplesheet_reads_fasta.view { item -> "reads_fasta: ${item}" }
+    ch_samplesheet_busco_btk.view   { item -> "busco_btk:   ${item}" }
+
 
     def ch_versions = channel.empty()
     def ch_multiqc_files = channel.empty()

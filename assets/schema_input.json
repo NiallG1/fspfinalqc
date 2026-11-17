@@ -4,6 +4,7 @@
     "title": "nf-core/fspfinalqc pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
+    "uniqueEntries": ["sample"],
     "items": {
         "type": "object",
         "properties": {
@@ -26,8 +27,54 @@
                 "exists": true,
                 "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
                 "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+            },
+            "fasta": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?a(\\.gz)?$",
+                "errorMessage": "Fasta file cannot contain spaces and must have extension '.fa.gz' or '.fasta.gz' or '.fa' or '.fasta'"
+            },
+            "genus": {
+                "type": "string",
+                "errorMessage": "Taxonomic genus name",
+                "meta": ["genus"]
+            },
+            "family": {
+                "type": "string",
+                "errorMessage": "Taxonomic family name",
+                "meta": ["family"]
+            },
+            "order": {
+                "type": "string",
+                "errorMessage": "Taxonomic order name",
+                "meta": ["order"]
+            },
+            "class": {
+                "type": "string",
+                "errorMessage": "Taxonomic class name",
+                "meta": ["class"]
+            },
+            "phylum": {
+                "type": "string",
+                "errorMessage": "Taxonomic phylum name",
+                "meta": ["phylum"]
+            },
+            "busco_full_table": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^([\\S\\s]*\\/)?([^\\s\\/]+_)?full_table\\.tsv$",
+                "errorMessage": "This is the previously generated busco full table corresponding to the input fasta file. BUSCO full table file cannot contain spaces and must have extension '.tsv'"
+            },
+            "btk_results_directory": {
+                "type": "string",
+                "format": "directory-path",
+                "exists": true,
+                "pattern": "^\\S+$",
+                "errorMessage": "This is the directory containing the results produced with BlobToolKit viewer during the manual decontamination, following the FSP protocol. It's a directory that cannot contain spaces. The directory must contain the following files: '*_taxonomy.csv', '*_core.csv', and 9 PNG files."
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "fastq_1", "fasta"]
     }
 }

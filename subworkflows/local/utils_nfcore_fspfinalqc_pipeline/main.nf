@@ -106,25 +106,36 @@ workflow PIPELINE_INITIALISATION {
     channel
         .fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
         .map {
-            meta, fastq_1, fastq_2 ->
+            // Map all the columns of the samplesheet into the channel
+            meta, fastq_1, fastq_2, fasta, busco_full_table, btk_results_directory ->
+                // if fastq_2 is not provided, then the sample is single-end, otherwise it is paired-end
                 if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
+                    return [ meta + [ single_end:true ], [ fastq_1 ], fasta, busco_full_table, btk_results_directory ]
                 } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
+                    return [ meta + [ single_end:false ], [ fastq_1, fastq_2 ], fasta, busco_full_table, btk_results_directory ]
                 }
         }
-        .groupTuple()
-        .map { samplesheet ->
-            validateInputSamplesheet(samplesheet)
-        }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
+        .map { samplesheet -> validateInputSamplesheet(samplesheet) }
+        .multiMap { meta, fastqs, fasta, busco_full_table, btk ->
+            // reads only, needed for bwa-mem2 when using decontaminated assembly
+            reads: [ meta, fastqs ]
+            // fasta only, needed for seqkit subseq
+            fasta: [ meta, fasta ]
+            // reads and fasta, needed for bwa-mem2 when using the assembly directly
+            reads_fasta: [ meta, fastqs, fasta ]
+            // busco and btk results, needed for extracting decontaminated contigs and reporting
+            busco_btk: [ meta, busco_full_table, btk ]
         }
         .set { ch_samplesheet }
 
+    // busco_full_table and btk_results_directory are optional: keep only samples that have them
+    ch_busco_btk = ch_samplesheet.busco_btk.filter { meta, busco, btk -> busco && btk }
+
     emit:
-    samplesheet = ch_samplesheet
+    samplesheet = ch_samplesheet.reads // takes meta and fastqs from the samplesheet
+    samplesheet_fasta = ch_samplesheet.fasta // takes meta and fasta from the samplesheet
+    samplesheet_reads_fasta = ch_samplesheet.reads_fasta // takes meta, fastqs and fasta from the samplesheet
+    samplesheet_busco_btk = ch_busco_btk // takes ch_busco_btk which contains meta, busco_full_table and btk_results_directory from the samplesheet
     versions    = ch_versions
 }
 
@@ -183,16 +194,23 @@ workflow PIPELINE_COMPLETION {
 // Validate channels from input samplesheet
 //
 def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
+    def (meta, fastqs, fasta, busco_table, btk_dir) = input
 
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ meta -> meta.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
+    // Check the BlobToolKit directory contents, if provided
+    def btk     = []
+    if (btk_dir) {
+        def taxonomy = files("${btk_dir}/*_taxonomy.csv")
+        def core     = files("${btk_dir}/*_core.csv")
+        def pngs     = files("${btk_dir}/*.png")
+        if (taxonomy.size() != 1 || core.size() != 1 || pngs.size() != 9) {
+            error("Please check input samplesheet -> '${btk_dir}' for sample '${meta.id}' must contain one '*_taxonomy.csv', one '*_core.csv' and 9 PNG files (found ${taxonomy.size()}, ${core.size()}, ${pngs.size()})")
+        }
+        btk = [ taxonomy[0], core[0] ] + pngs
     }
 
-    return [ metas[0], fastqs ]
+    return [ meta, fastqs, fasta, busco_table, btk ]
 }
+
 //
 // Generate methods description for MultiQC
 //

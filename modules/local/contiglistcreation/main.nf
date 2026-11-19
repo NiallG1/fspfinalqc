@@ -1,61 +1,35 @@
 process CONTIGLISTCREATION {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_single'
 
-    // TODO nf-core: See section in main README for further information regarding finding and adding container addresses to the section below.
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/YOUR-TOOL-HERE':
-        'quay.io/biocontainers/YOUR-TOOL-HERE' }"
+        'oras://community.wave.seqera.io/library/gawk:5.4.1--2c85b98809d03f7f' :
+        'community.wave.seqera.io/library/gawk:5.4.1--ad0937af1dba8a35' }"
 
     input:
-    tuple val(meta), path(bam)
+    tuple val(meta), path(busco_full_table), path(btk_files)   // btk_files = *_taxonomy.csv, *_core.csv, 9 x *.png
 
     output:
-    // TODO nf-core: Named file extensions MUST be emitted for ALL output channels
-    tuple val(meta), path("*.bam"), emit: bam
-    // TODO nf-core: List additional required output channels/values here
-    // TODO nf-core: Update the command here to obtain the version number of the software used in this module
-    // TODO nf-core: If multiple software packages are used in this module, all MUST be added here
-    //               by copying the line below and replacing the current tool with the extra tool(s)
-    tuple val("${task.process}"), val('contiglistcreation'), eval("contiglistcreation --version"), topic: versions, emit: versions_contiglistcreation
+    tuple val(meta), path("${prefix}_contig_ids.txt"), emit: results
+    tuple val("${task.process}"), val('gawk'), eval("awk -Wversion | sed '1!d; s/.*Awk //; s/,.*//'"), topic: versions, emit: versions_gawk
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    // TODO nf-core: Where possible, a command MUST be provided to obtain the version number of the software e.g. 1.10
-    //               If the software is unable to output a version number on the command-line then it can be manually specified
-    //               e.g. https://github.com/nf-core/modules/blob/master/modules/nf-core/homer/annotatepeaks/main.nf
-    //               Each software used MUST provide the software name and version number in the YAML version file (versions.yml)
-    // TODO nf-core: It MUST be possible to pass additional parameters to the tool as a command-line string via the "task.ext.args" directive
-    // TODO nf-core: If the tool supports multi-threading then you MUST provide the appropriate parameter
-    //               using the Nextflow "task" variable e.g. "--threads $task.cpus"
-    // TODO nf-core: Please replace the example samtools command below with your module's command
-    // TODO nf-core: Please indent the command appropriately (4 spaces!!) to help with readability ;)
+    prefix = task.ext.prefix ?: "${meta.id}"
     """
-    contiglistcreation \\
-        $args \\
-        -@ $task.cpus \\
-        -o ${prefix}.bam \\
-        $bam
+    {
+        awk -F',' 'NR>1 && \$9 != "" {print \$9}' *_taxonomy.csv
+        awk -F',' 'NR>1 && \$9 != "" {print \$9}' *_core.csv
+        awk -F'\\t' '!/^#/ && \$3 != "" {print \$3}' ${busco_full_table}
+    } | LC_ALL=C sort -u > ${prefix}_contig_ids.txt
     """
 
     stub:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    // TODO nf-core: A stub section should mimic the execution of the original module as best as possible
-    //               Have a look at the following examples:
-    //               Simple example: https://github.com/nf-core/modules/blob/624977dfaf562211e68a8a868ca80acc8461f1ac/modules/nf-core/cutadapt/main.nf#L34-L46
-    //               Complex example: https://github.com/nf-core/modules/blob/88d43dad73a675e66bff49ebb57fe657a5909018/modules/nf-core/bedtools/split/main.nf#L32-L43
-    // TODO nf-core: If the module doesn't use arguments ($args), you SHOULD remove:
-    //               - The definition of args `def args = task.ext.args ?: ''` above.
-    //               - The use of the variable in the script `echo $args ` below.
+    prefix = task.ext.prefix ?: "${meta.id}"
     """
-    echo $args
-    
-    touch ${prefix}.bam
+    touch ${prefix}_contig_ids.txt
     """
 }

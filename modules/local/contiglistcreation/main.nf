@@ -8,7 +8,7 @@ process CONTIGLISTCREATION {
         'community.wave.seqera.io/library/gawk:5.4.1--ad0937af1dba8a35' }"
 
     input:
-    tuple val(meta), path(busco_full_table), path(btk_files)   // btk_files = *_taxonomy.csv, *_core.csv, 9 x *.png
+    tuple val(meta), path(busco_full_table), path(ch_samplesheet_busco_btk)   // btk_files = *_taxonomy.csv, *_core.csv, 9 x *.png
 
     output:
     tuple val(meta), path("${prefix}_contig_ids.txt"), emit: results
@@ -21,8 +21,8 @@ process CONTIGLISTCREATION {
     prefix = task.ext.prefix ?: "${meta.id}"
     """
     {
-        awk -F',' 'NR>1 && \$9 != "" {print \$9}' *_taxonomy.csv
-        awk -F',' 'NR>1 && \$9 != "" {print \$9}' *_core.csv
+        awk -F',' 'NR>1 && \$9 != "" {print \$9}' ${prefix}_taxonomy.csv
+        awk -F',' 'NR>1 && \$9 != "" {print \$9}' ${prefix}_core.csv
         awk -F'\\t' '!/^#/ && \$3 != "" {print \$3}' ${busco_full_table}
     } | LC_ALL=C sort -u > ${prefix}_contig_ids.txt
     """

@@ -34,6 +34,7 @@ workflow NFCORE_FSPFINALQC {
     samplesheet_fasta       // channel: [ meta, fasta ]
     samplesheet_reads_fasta // channel: [ meta, reads, fasta ]
     samplesheet_busco_btk   // channel: [ meta, busco_full_table, btk_files ]
+    samplesheet_btk_plots   // channel: [ meta, btk_plots ]
 
     main:
 
@@ -45,6 +46,7 @@ workflow NFCORE_FSPFINALQC {
         samplesheet_fasta,
         samplesheet_reads_fasta,
         samplesheet_busco_btk,
+        samplesheet_btk_plots,
         params.multiqc_config,
         params.multiqc_logo,
         params.multiqc_methods_description,
@@ -84,7 +86,8 @@ workflow {
         PIPELINE_INITIALISATION.out.samplesheet,
         PIPELINE_INITIALISATION.out.samplesheet_fasta,
         PIPELINE_INITIALISATION.out.samplesheet_reads_fasta,
-        PIPELINE_INITIALISATION.out.samplesheet_busco_btk
+        PIPELINE_INITIALISATION.out.samplesheet_busco_btk,
+        PIPELINE_INITIALISATION.out.samplesheet_btk_plots
     )
     //
     // SUBWORKFLOW: Run completion tasks

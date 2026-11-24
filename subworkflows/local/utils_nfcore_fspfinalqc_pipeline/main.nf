@@ -123,19 +123,23 @@ workflow PIPELINE_INITIALISATION {
             fasta: [ meta, fasta ]
             // reads and fasta, needed for bwa-mem2 when using the assembly directly
             reads_fasta: [ meta, fastqs, fasta ]
-            // busco and btk results, needed for extracting decontaminated contigs and reporting
-            busco_btk: [ meta, busco_full_table, btk ]
+            // busco full table + the two BTK tables only   
+            busco_btk: [ meta, busco_full_table, btk ? btk[0] : [], btk ? btk[1] : [] ]
+            // the 9 BTK plots
+            btk_plots: [ meta, btk ? btk.drop(2) : [] ]
         }
         .set { ch_samplesheet }
 
     // busco_full_table and btk_results_directory are optional: keep only samples that have them
-    ch_busco_btk = ch_samplesheet.busco_btk.filter { meta, busco, btk -> busco && btk }
+    ch_busco_btk = ch_samplesheet.busco_btk.filter { meta, busco, taxonomy, core -> busco && taxonomy && core }
+    ch_btk_plots = ch_samplesheet.btk_plots.filter { meta, pngs -> pngs }
 
     emit:
     samplesheet = ch_samplesheet.reads // takes meta and fastqs from the samplesheet
     samplesheet_fasta = ch_samplesheet.fasta // takes meta and fasta from the samplesheet
     samplesheet_reads_fasta = ch_samplesheet.reads_fasta // takes meta, fastqs and fasta from the samplesheet
-    samplesheet_busco_btk = ch_busco_btk // takes ch_busco_btk which contains meta, busco_full_table and btk_results_directory from the samplesheet
+    samplesheet_busco_btk = ch_busco_btk // takes ch_busco_btk which contains meta, busco_full_table and btk tables from the samplesheet
+    samplesheet_btk_plots = ch_btk_plots // takes ch_btk_plots which contains meta and btk figures from the samplesheet
     versions    = ch_versions
 }
 
@@ -207,6 +211,10 @@ def validateInputSamplesheet(input) {
         }
         btk = [ taxonomy[0], core[0] ] + pngs
     }
+
+   if (!busco_table != !btk_dir) {
+       error("Sample '${meta.id}': provide both busco_full_table and btk_results_directory, or neither")
+   }
 
     return [ meta, fastqs, fasta, busco_table, btk ]
 }

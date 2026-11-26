@@ -3,11 +3,12 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { MULTIQC                } from '../modules/nf-core/multiqc/main'
-include { paramsSummaryMap       } from 'plugin/nf-schema'
-include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_fspfinalqc_pipeline'
+include { MULTIQC                          } from '../modules/nf-core/multiqc/main'
+include { paramsSummaryMap                 } from 'plugin/nf-schema'
+include { paramsSummaryMultiqc             } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { softwareVersionsToYAML           } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText           } from '../subworkflows/local/utils_nfcore_fspfinalqc_pipeline'
+include { DECONTAMINATED_CONTIG_EXTRACTION } from '../subworkflows/local/decontaminated_contig_extraction/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,6 +36,15 @@ workflow FSPFINALQC {
     ch_samplesheet_reads_fasta.view { item -> "reads_fasta: ${item}" } // to be removed
     ch_samplesheet_busco_btk.view   { item -> "busco_btk:   ${item}" } // to be removed
     ch_samplesheet_btk_plots.view   { item -> "btk_plots:   ${item}" } // to be removed
+
+
+        //
+    // SUBWORKFLOW: Extract decontaminated contigs
+    //
+    DECONTAMINATED_CONTIG_EXTRACTION(
+        ch_samplesheet_busco_btk,
+        ch_samplesheet_fasta
+    )
 
     def ch_versions = channel.empty()
     def ch_multiqc_files = channel.empty()

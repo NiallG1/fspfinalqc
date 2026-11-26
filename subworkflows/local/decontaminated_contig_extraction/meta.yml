@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/subworkflows/yaml-schema.json
 name: "decontaminated_contig_extraction"
 ## TODO nf-core: Add a description of the subworkflow and list keywords
-description: Sort SAM/BAM/CRAM file
+description: creates list of contigs to retain and pulls these into a new fasta from the original
 keywords:
   - sort
   - bam
@@ -9,8 +9,7 @@ keywords:
   - cram
 ## TODO nf-core: Add a list of the modules and/or subworkflows used in the subworkflow
 components:
-  - samtools/sort
-  - samtools/index
+  - seqtk/subseq
 ## TODO nf-core: List all of the channels used as input with a description and their structure
 input:
   - ch_bam:

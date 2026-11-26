@@ -37,7 +37,6 @@ workflow FSPFINALQC {
     ch_samplesheet_busco_btk.view   { item -> "busco_btk:   ${item}" } // to be removed
     ch_samplesheet_btk_plots.view   { item -> "btk_plots:   ${item}" } // to be removed
 
-
         //
     // SUBWORKFLOW: Extract decontaminated contigs
     //
